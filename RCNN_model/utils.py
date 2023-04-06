@@ -60,7 +60,7 @@ def parse_annotation(csv_path, img_size):
             # get labels
 
             ## TO DO
-            label = row['annotation.0.labels.0']
+            label = row['annotation.0.classification']
             groundtruth_boxes.append(bbox.tolist())
             groundtruth_classes.append(label)
             
