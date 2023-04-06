@@ -30,12 +30,15 @@ def parse_annotation(csv_path, img_size):
     gt_classes_all = []
 
     # get image paths
-    for path in df['path'].unique():
-        path_bis = "/content/" + path[6:]
+    for path in df['imageUrl'].unique():
+
+        #For Google Colab
+        #Clone the repo in colab to use this
+        path_bis = "/content/APS360_Traffic_Sign_Recognition/" + path
         
 
         # get raw image size
-        df_img = df[df['path']==path]
+        df_img = df[df['imageUrl']==path]
         orig_w = df_img['annotation.0.width'].iloc[0]
         orig_h = df_img['annotation.0.height'].iloc[0]
 
@@ -43,7 +46,7 @@ def parse_annotation(csv_path, img_size):
         groundtruth_boxes = []
         groundtruth_classes = []
         for i, row in df_img.iterrows():
-            if pd.isna(row['annotation.0.centerX']) or pd.isna(row['annotation.0.centerY']) or pd.isna(row['annotation.0.width']) or pd.isna(row['annotation.0.height']) or pd.isna(row['annotation.0.labels.0']):
+            if pd.isna(row['annotation.0.centerX']) or pd.isna(row['annotation.0.centerY']) or pd.isna(row['annotation.0.width']) or pd.isna(row['annotation.0.height']) or pd.isna(row['annotation.0.classification']):
                 continue
             xmin = row['annotation.0.centerX'] - row['annotation.0.width']/2
             ymin = row['annotation.0.centerY'] - row['annotation.0.height']/2
