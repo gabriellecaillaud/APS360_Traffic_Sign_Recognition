@@ -7,13 +7,11 @@ import torch.nn as nn
 
 from utils import *
 
-# -------------------- Models -----------------------
-
 class FeatureExtractor(nn.Module):
     def __init__(self):
         super().__init__()
-        model = torchvision.models.resnet50(pretrained=True)
-        req_layers = list(model.children())[:4]
+        model = torchvision.models.resnet18(pretrained=True)
+        req_layers = list(model.children())[:6]
         self.backbone = nn.Sequential(*req_layers)
         for param in self.backbone.named_parameters():
             param[1].requires_grad = True
@@ -21,8 +19,17 @@ class FeatureExtractor(nn.Module):
     def forward(self, img_data):
         return self.backbone(img_data)
     
+    def freeze_layers(self, num_layers):
+        for i, child in enumerate(self.backbone.children()):
+            if i < num_layers:
+                for param in child.parameters():
+                    param.requires_grad = False
+            else:
+                break
+        
+
 class ProposalModule(nn.Module):
-    def __init__(self, in_features, hidden_dim=256, n_anchors=9, p_dropout=0.3):
+    def __init__(self, in_features, hidden_dim=252, n_anchors=9, p_dropout=0.3):
         super().__init__()
         self.n_anchors = n_anchors
         self.conv1 = nn.Conv2d(in_features, hidden_dim, kernel_size=3, padding=1)
@@ -56,7 +63,7 @@ class ProposalModule(nn.Module):
             
         elif mode == 'eval':
             return conf_scores_pred, reg_offsets_pred
-        
+           
 class RegionProposalNetwork(nn.Module):
     def __init__(self, img_size, out_size, out_channels):
         super().__init__()
@@ -82,6 +89,8 @@ class RegionProposalNetwork(nn.Module):
         self.w_reg = 5
         
         self.feature_extractor = FeatureExtractor()
+        #freezing the first 6 layers
+        self.feature_extractor.freeze_layers(6)
         self.proposal_module = ProposalModule(out_channels, n_anchors=self.n_anc_boxes)
         
     def forward(self, images, gt_bboxes, gt_classes):
@@ -110,7 +119,7 @@ class RegionProposalNetwork(nn.Module):
         total_rpn_loss = self.w_conf * cls_loss + self.w_reg * reg_loss
         
         return total_rpn_loss, feature_map, proposals, positive_anc_ind_sep, GT_class_pos
-    
+
     def inference(self, images, conf_thresh=0.5, nms_thresh=0.7):
         with torch.no_grad():
             batch_size = images.size(dim=0)
@@ -150,7 +159,7 @@ class RegionProposalNetwork(nn.Module):
         return proposals_final, conf_scores_final, feature_map
     
 class ClassificationModule(nn.Module):
-    def __init__(self, out_channels, n_classes, roi_size, hidden_dim=256, p_dropout=0.3):
+    def __init__(self, out_channels, n_classes, roi_size, hidden_dim=128, p_dropout=0.3):
         super().__init__()        
         self.roi_size = roi_size
         # hidden network
@@ -250,3 +259,4 @@ def calc_bbox_reg_loss(gt_offsets, reg_offsets_pos, batch_size):
     assert gt_offsets.size() == reg_offsets_pos.size()
     loss = F.smooth_l1_loss(reg_offsets_pos, gt_offsets, reduction='sum') * 1. / batch_size
     return loss
+
