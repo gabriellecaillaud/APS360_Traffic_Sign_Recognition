@@ -17,7 +17,7 @@ import os
 import torch
 import numpy as np
 
-def parse_annotation(csv_path, img_size):
+def parse_annotation(csv_path, img_size, img_dir= "/content/APS360_Traffic_Sign_Recognition/"):
     '''
     Read the CSV file, get the annotations, and resize them to the scaled image size
     '''
@@ -34,7 +34,7 @@ def parse_annotation(csv_path, img_size):
 
         #For Google Colab
         #Clone the repo in colab to use this
-        path_bis = "/content/APS360_Traffic_Sign_Recognition/" + path
+        path_bis = img_dir + path
         
 
         # get raw image size
